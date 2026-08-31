@@ -175,7 +175,7 @@ app.delete('/api/invoices/:id', (req, res) => {
 });
 
 // React Router fallback (must be after all API routes)
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
