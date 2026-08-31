@@ -15,7 +15,7 @@ export const languages = [
 
 export const translations = {
   en: {
-    dashboardTitle: "InvoSafe Dashboard",
+    dashboardTitle: "Invorator Dashboard",
     dashboardSubtitle: "High-Fidelity Client-Side Invoice Vault",
     spentAnalytics: "Total Expensed",
     invoicesCount: "Total Invoices",
@@ -79,7 +79,7 @@ export const translations = {
     currencyLabel: "Currency",
     rupees: "Rupees (₹)",
     dollars: "Dollars ($)",
-    lockedTitle: "InvoSafe Vault Locked",
+    lockedTitle: "Invorator Vault Locked",
     lockedSubtitle: "Enter your custom cryptographic passcode to decrypt and access local invoice records.",
     btnUnlock: "Unlock Database",
     sessionLocked: "🔒 Lock Session",

@@ -83,7 +83,7 @@ export async function shareInvoice(invoice, imageBlob) {
   const { invoiceNumber, vendorName, total, currency = "USD" } = invoice;
   const symbol = currency === "INR" ? "₹" : "$";
   const formattedTotal = total.toLocaleString(currency === "INR" ? "en-IN" : "en-US", { minimumFractionDigits: 2 });
-  const shareText = `Official Invoice *${invoiceNumber}* from *${vendorName}*\nTotal Payable: ${symbol}${formattedTotal}\nSecurely generated via InvoSafe.`;
+  const shareText = `Official Invoice *${invoiceNumber}* from *${vendorName}*\nTotal Payable: ${symbol}${formattedTotal}\nSecurely generated via Invorator.`;
 
   // 1. Attempt Native Web Share with Files (mobile/modern desktop browsers)
   if (navigator.canShare && navigator.share) {
