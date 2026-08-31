@@ -31,7 +31,7 @@ COPY . .
 RUN npm run build
 
 # Copy frontend build to backend static folder (we need to configure express to serve it)
-RUN cp -r dist backend/public
+RUN rm -rf backend/public && mv dist backend/public
 
 # Start the server
 WORKDIR /app/backend
