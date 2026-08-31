@@ -1,23 +1,95 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
+export const db = {};
+export const auth = {};
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
-};
+export function collection(db, name) {
+  return name;
+}
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const analytics = getAnalytics(app);
+export function query(col, ...args) {
+  return col;
+}
 
-// Initialize Cloud Firestore and get a reference to the service
-export const db = getFirestore(app);
-export const auth = getAuth(app);
+export function where() {
+  return null;
+}
+
+export async function getDocs(colName) {
+  try {
+    const res = await fetch(`/api/${colName}?userId=local_user`);
+    const data = await res.json();
+    return data.map(item => ({
+      id: item.id,
+      data: () => item
+    }));
+  } catch (err) {
+    return [];
+  }
+}
+
+export function doc(db, colName, id) {
+  return { colName, id };
+}
+
+export async function getDoc(docRef) {
+  if (docRef.colName === 'users') {
+    const res = await fetch('/api/settings?userId=local_user');
+    const data = await res.json();
+    return {
+      exists: () => Object.keys(data).length > 0,
+      data: () => data
+    };
+  }
+  return { exists: () => false, data: () => ({}) };
+}
+
+export async function setDoc(docRef, data) {
+  await fetch(`/api/${docRef.colName === 'users' ? 'settings' : docRef.colName}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, id: docRef.id, userId: 'local_user' })
+  });
+}
+
+export async function addDoc(colName, data) {
+  const id = String(Date.now());
+  await fetch(`/api/${colName}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, id, userId: 'local_user' })
+  });
+}
+
+export async function updateDoc(docRef, data) {
+  await fetch(`/api/${docRef.colName === 'users' ? 'settings' : docRef.colName}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, id: docRef.id, userId: 'local_user' })
+  });
+}
+
+export async function deleteDoc(docRef) {
+  await fetch(`/api/${docRef.colName}/${docRef.id}`, { method: 'DELETE' });
+}
+
+export function writeBatch() {
+  const operations = [];
+  return {
+    update: (docRef, data) => {
+      operations.push(updateDoc(docRef, data));
+    },
+    commit: async () => {
+      await Promise.all(operations);
+    }
+  };
+}
+
+// Dummy auth functions
+export function onAuthStateChanged(auth, callback) {
+  callback({ uid: 'local_user' });
+  return () => {};
+}
+export function signOut() { return Promise.resolve(); }
+export function getAuth() { return {}; }
+export function getFirestore() { return {}; }
+export function initializeApp() { return {}; }
+export function getAnalytics() { return {}; }

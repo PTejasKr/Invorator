@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "../utils/firebase";
 import { db, auth } from "../utils/firebase";
 
 export default function Reports() {

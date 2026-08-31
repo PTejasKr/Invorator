@@ -1,6 +1,4 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db, auth } from "../utils/firebase";
 import Tesseract from "tesseract.js";
 import { parseOCRText } from "../utils/ocrParser";
 import InvoicePreview from "./InvoicePreview";

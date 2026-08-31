@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, writeBatch } from "firebase/firestore";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { db, auth } from "./utils/firebase";
 import { translations, languages } from "./utils/translations";
 
 import Layout from "./components/Layout";
@@ -19,9 +16,9 @@ import html2canvas from "html2canvas";
 import { captureInvoiceBlob, shareInvoice } from "./utils/imageExport";
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({ uid: "local_user" });
   const [userProfile, setUserProfile] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
   const [history, setHistory] = useState([]);
   
   const [lang, setLang] = useState(() => localStorage.getItem("_inv_lang") || "en");
@@ -33,22 +30,7 @@ export default function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        const { doc, getDoc } = await import("firebase/firestore");
-        const profileSnap = await getDoc(doc(db, "users", currentUser.uid));
-        if (profileSnap.exists()) {
-          setUserProfile(profileSnap.data());
-        }
-        loadDatabase(currentUser.uid);
-      } else {
-        setHistory([]);
-        setUserProfile(null);
-      }
-      setAuthLoading(false);
-    });
-    return () => unsubscribe();
+    loadDatabase("local_user");
   }, []);
 
   const handleLangChange = (newLang) => {
@@ -74,7 +56,6 @@ export default function App() {
       if (!rate) throw new Error("Target currency rate not found");
 
       if (history.length > 0) {
-        const batch = writeBatch(db);
         const convertedHistory = history.map(inv => {
           const convertedItems = (inv.items || []).map(item => ({
             ...item,
@@ -90,13 +71,17 @@ export default function App() {
             total: Math.round((inv.total * rate) * 100) / 100,
             items: convertedItems
           };
-
-          const invRef = doc(db, "invoices", String(updatedInv.id));
-          batch.update(invRef, updatedInv);
           return updatedInv;
         });
         
-        await batch.commit();
+        await Promise.all(convertedHistory.map(inv => 
+          fetch("/api/invoices", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...inv, userId: "local_user" })
+          })
+        ));
+        
         setHistory(convertedHistory);
       }
       
@@ -112,17 +97,13 @@ export default function App() {
 
   const loadDatabase = async (uid) => {
     try {
-      const { query, where } = await import("firebase/firestore");
-      const q = query(collection(db, "invoices"), where("userId", "==", uid));
-      const querySnapshot = await getDocs(q);
-      const parsedHistory = [];
-      querySnapshot.forEach((docSnap) => {
-        parsedHistory.push({ id: docSnap.id, ...docSnap.data() });
-      });
-      parsedHistory.sort((a, b) => Number(b.id) - Number(a.id));
-      setHistory(parsedHistory);
+      const res = await fetch(`/api/invoices?userId=${uid}`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data);
+      }
     } catch (err) {
-      console.error("Failed to load invoice history from Firebase:", err);
+      console.error("Failed to load invoice history from backend:", err);
       setHistory([]);
     }
   };
@@ -185,7 +166,7 @@ export default function App() {
               }}
               onDeleteInvoice={async (id) => {
                 if (!window.confirm("Are you sure?")) return;
-                await deleteDoc(doc(db, "invoices", String(id)));
+                await fetch(`/api/invoices/${id}`, { method: "DELETE" });
                 setHistory(h => h.filter(x => x.id !== id));
               }}
               onDownloadPDF={async (inv) => {
@@ -222,7 +203,7 @@ export default function App() {
               onCopyInvoice={(inv) => navigate(`/invoices/new`, { state: { invoice: inv } })}
               onDeleteInvoice={async (id) => {
                 if (!window.confirm("Are you sure?")) return;
-                await deleteDoc(doc(db, "invoices", String(id)));
+                await fetch(`/api/invoices/${id}`, { method: "DELETE" });
                 setHistory(h => h.filter(x => x.id !== id));
               }}
               onDownloadPDF={() => {}}
@@ -256,11 +237,11 @@ export default function App() {
               userProfile={userProfile}
               onSave={async (inv) => {
                 const invoiceId = String(Date.now());
-                const invRef = doc(db, "invoices", invoiceId);
-                const toSave = { ...inv, userId: user.uid };
-                await updateDoc(invRef, toSave).catch(async () => {
-                   const { setDoc } = await import("firebase/firestore");
-                   await setDoc(invRef, toSave);
+                const toSave = { ...inv, id: invoiceId, userId: user.uid };
+                await fetch("/api/invoices", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(toSave)
                 });
                 setHistory([{ ...toSave, id: invoiceId }, ...history]);
                 navigate("/invoices");
@@ -275,9 +256,12 @@ export default function App() {
               userProfile={userProfile}
               onSave={async (inv) => {
                 // Implementation for edit
-                const invRef = doc(db, "invoices", String(inv.id));
                 const toSave = { ...inv, userId: user.uid };
-                await updateDoc(invRef, toSave);
+                await fetch("/api/invoices", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(toSave)
+                });
                 setHistory(history.map(h => h.id === inv.id ? toSave : h));
                 navigate("/invoices");
               }}
