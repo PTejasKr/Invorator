@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice <%= invoiceNumber %></title>
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    :root {
+      --invoice-width: 210mm;
+      --invoice-min-height: 297mm;
+      --invoice-padding: 18mm;
+      --invoice-font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --invoice-text-color: #333333;
+      --invoice-heading-color: #000000;
+      --invoice-border-color: #dddddd;
+      --invoice-primary-color: #3b82f6; 
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: white;
+    }
+
+    .invoice-document {
+      width: var(--invoice-width);
+      min-height: var(--invoice-min-height);
+      padding: var(--invoice-padding);
+      font-family: var(--invoice-font);
+      color: var(--invoice-text-color);
+      box-sizing: border-box;
+      font-size: 10pt;
+      line-height: 1.5;
+    }
+
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 2rem;
+    }
+
+    .invoice-logo {
+      max-width: 200px;
+      max-height: 100px;
+      object-fit: contain;
+    }
+
+    .invoice-title {
+      font-size: 28pt;
+      font-weight: 300;
+      color: var(--invoice-heading-color);
+      margin: 0;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .invoice-parties {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2.5rem;
+    }
+
+    .invoice-party-col {
+      flex: 1;
+    }
+
+    .invoice-party-title {
+      font-size: 9pt;
+      font-weight: bold;
+      color: #777;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .invoice-details {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 2.5rem;
+    }
+
+    .invoice-details-table {
+      border-collapse: collapse;
+    }
+
+    .invoice-details-table td {
+      padding: 0.25rem 0.5rem;
+      text-align: right;
+    }
+
+    .invoice-details-table td:first-child {
+      font-weight: bold;
+      color: #555;
+    }
+
+    .invoice-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+    }
+
+    .invoice-items-table th {
+      background: var(--invoice-primary-color);
+      color: white;
+      text-align: left;
+      padding: 0.5rem;
+      font-size: 9pt;
+      font-weight: bold;
+    }
+
+    .invoice-items-table th.amount, .invoice-items-table th.rate, .invoice-items-table th.qty {
+      text-align: right;
+    }
+
+    .invoice-items-table td {
+      padding: 0.75rem 0.5rem;
+      border-bottom: 1px solid var(--invoice-border-color);
+      vertical-align: top;
+      page-break-inside: avoid;
+    }
+
+    .invoice-items-table td.amount, .invoice-items-table td.rate, .invoice-items-table td.qty {
+      text-align: right;
+    }
+
+    .invoice-summary {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 3rem;
+      page-break-inside: avoid;
+    }
+
+    .invoice-summary-table {
+      border-collapse: collapse;
+      width: 300px;
+    }
+
+    .invoice-summary-table td {
+      padding: 0.5rem;
+      text-align: right;
+    }
+
+    .invoice-summary-table tr.total-row td {
+      font-weight: bold;
+      font-size: 12pt;
+      border-top: 2px solid var(--invoice-border-color);
+      border-bottom: 2px solid var(--invoice-border-color);
+    }
+
+    .invoice-notes-terms {
+      margin-top: auto;
+      page-break-inside: avoid;
+    }
+
+    .invoice-section-title {
+      font-weight: bold;
+      font-size: 10pt;
+      margin-bottom: 0.25rem;
+    }
+
+    .invoice-section-content {
+      color: #555;
+      white-space: pre-wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .text-right { text-align: right; }
+    .w-1_2 { width: 50%; }
+    .font-bold { font-weight: bold; }
+    .text-lg { font-size: 1.125rem; }
+    .mb-1 { margin-bottom: 0.25rem; }
+    .flex { display: flex; }
+    .justify-between { justify-content: space-between; }
+    .items-start { align-items: flex-start; }
+    .pr-8 { padding-right: 2rem; }
+    .pl-8 { padding-left: 2rem; }
+    .mt-12 { margin-top: 3rem; }
+    .w-full { width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="invoice-document">
+    <div class="invoice-header">
+      <div class="w-1_2">
+        <% if (logo) { %>
+          <img src="<%= logo %>" alt="Logo" class="invoice-logo" />
+        <% } %>
+      </div>
+      <div class="w-1_2 text-right">
+        <h1 class="invoice-title">INVOICE</h1>
+      </div>
+    </div>
+
+    <div class="invoice-parties">
+      <div class="invoice-party-col pr-8">
+        <div class="invoice-party-title">From</div>
+        <div class="font-bold text-lg mb-1"><%= vendorName %></div>
+        <div style="white-space: pre-wrap;"><%= vendorAddress %></div>
+      </div>
+      <div class="invoice-party-col pl-8">
+        <div class="invoice-party-title">Bill To</div>
+        <div class="font-bold text-lg mb-1"><%= clientName %></div>
+        <div style="white-space: pre-wrap;"><%= clientAddress %></div>
+      </div>
+    </div>
+
+    <div class="invoice-details">
+      <table class="invoice-details-table">
+        <tbody>
+          <tr>
+            <td>Date</td>
+            <td><%= date %></td>
+          </tr>
+          <tr>
+            <td>Payment Terms</td>
+            <td><%= paymentTerms %></td>
+          </tr>
+          <tr>
+            <td>Due Date</td>
+            <td><%= dueDate %></td>
+          </tr>
+          <tr>
+            <td>PO Number</td>
+            <td><%= poNumber %></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <table class="invoice-items-table">
+      <thead>
+        <tr>
+          <th style="width: 50%;">Item</th>
+          <th class="qty" style="width: 15%;">Quantity</th>
+          <th class="rate" style="width: 15%;">Rate</th>
+          <th class="amount" style="width: 20%;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% items.forEach(function(item) { %>
+          <tr>
+            <td style="white-space: pre-wrap;"><%= item.description %></td>
+            <td class="qty"><%= item.quantity %></td>
+            <td class="rate"><%= item.rate %></td>
+            <td class="amount"><%= item.amountFormatted %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+
+    <div class="flex justify-between items-start mt-12">
+      <div class="w-1_2 pr-8 invoice-notes-terms">
+        <% if (notes) { %>
+          <div class="invoice-section-title">Notes</div>
+          <div class="invoice-section-content"><%= notes %></div>
+        <% } %>
+        <% if (terms) { %>
+          <div class="invoice-section-title">Terms</div>
+          <div class="invoice-section-content"><%= terms %></div>
+        <% } %>
+      </div>
+
+      <div class="w-1_2 invoice-summary">
+        <table class="invoice-summary-table">
+          <tbody>
+            <tr>
+              <td>Subtotal</td>
+              <td><%= subtotalFormatted %></td>
+            </tr>
+            <% if (discount > 0) { %>
+            <tr>
+              <td>Discount</td>
+              <td>-<%= discount %></td>
+            </tr>
+            <% } %>
+            <% if (taxRate > 0) { %>
+            <tr>
+              <td>Tax (<%= taxRate %>%)</td>
+              <td><%= taxFormatted %></td>
+            </tr>
+            <% } %>
+            <% if (shipping > 0) { %>
+            <tr>
+              <td>Shipping</td>
+              <td>+<%= shipping %></td>
+            </tr>
+            <% } %>
+            <% if (amountPaid > 0) { %>
+            <tr>
+              <td>Amount Paid</td>
+              <td>-<%= amountPaidFormatted %></td>
+            </tr>
+            <% } %>
+            <tr class="total-row">
+              <td>Balance Due</td>
+              <td><%= balanceFormatted %></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

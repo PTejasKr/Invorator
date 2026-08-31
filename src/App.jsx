@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc, writeBatch } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -7,11 +7,9 @@ import { translations, languages } from "./utils/translations";
 
 import Layout from "./components/Layout";
 import Dashboard from "./components/Dashboard"; // Currently the main invoices/history list
-import BillGenerator from "./components/BillGenerator";
-import DesignSelector from "./components/DesignSelector";
+import InvoiceEditor from "./components/InvoiceEditor";
 import Auth from "./components/Auth";
 import Settings from "./components/Settings";
-import InvoicePreview from "./components/InvoicePreview";
 import Inventory from "./components/Inventory";
 import Parties from "./components/Parties";
 import Reports from "./components/Reports";
@@ -148,12 +146,6 @@ export default function App() {
 
   return (
     <>
-      {activePrintInvoice && (
-        <div className="print-only-container hidden print:block">
-          <InvoicePreview data={activePrintInvoice} lang={lang} currency={currency} />
-        </div>
-      )}
-
       <Layout 
         onLogout={handleLogout} 
         lang={lang} 
@@ -176,7 +168,7 @@ export default function App() {
                   if (!phone) return;
                   const message = `Hello ${inv.clientName},\n\nYour invoice ${inv.invoiceNumber} for ${inv.total} has been generated.`;
                   
-                  const res = await fetch("http://localhost:3001/api/whatsapp/send", {
+                  const res = await fetch("/api/whatsapp/send", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ phone, message, pdfUrl: "https://invorator-mock.com/invoice/" + inv.id })
@@ -196,13 +188,25 @@ export default function App() {
                 await deleteDoc(doc(db, "invoices", String(id)));
                 setHistory(h => h.filter(x => x.id !== id));
               }}
-              onDownloadPDF={(inv) => {
-                setActivePrintInvoice(inv);
-                setTimeout(async () => {
-                  // Print logic (basic fallback, typically handled by window.print or html2canvas)
-                  window.print();
-                  setActivePrintInvoice(null);
-                }, 500);
+              onDownloadPDF={async (inv) => {
+                try {
+                  const response = await fetch("/api/invoices/pdf", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ invoiceData: inv })
+                  });
+                  if (!response.ok) throw new Error("PDF generation failed");
+                  const blob = await response.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `Invoice_${inv.invoiceNumber}.pdf`;
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                } catch (e) {
+                  alert("Failed to generate PDF from backend.");
+                  console.error(e);
+                }
               }}
               
             />
@@ -247,22 +251,10 @@ export default function App() {
           } />
 
           <Route path="/invoices/new" element={
-            <DesignSelector
-              lang={lang}
-              onSelectDesign={(designId) => navigate(`/invoices/generator?design=${designId}`)}
-              onCancel={() => navigate(-1)}
-            />
-          } />
-
-          <Route path="/invoices/generator" element={
-            <BillGenerator 
-              lang={lang}
-              currency={currency}
-              initialData={null}
-              selectedDesign={1}
-              isEditMode={false}
+            <InvoiceEditor 
+              initialData={{}}
               userProfile={userProfile}
-              onSaveInvoice={async (inv) => {
+              onSave={async (inv) => {
                 const invoiceId = String(Date.now());
                 const invRef = doc(db, "invoices", invoiceId);
                 const toSave = { ...inv, userId: user.uid };
@@ -271,6 +263,22 @@ export default function App() {
                    await setDoc(invRef, toSave);
                 });
                 setHistory([{ ...toSave, id: invoiceId }, ...history]);
+                navigate("/invoices");
+              }}
+              onCancel={() => navigate("/invoices")}
+            />
+          } />
+
+          <Route path="/invoices/edit/:id" element={
+            <InvoiceEditor 
+              isEditMode={true}
+              userProfile={userProfile}
+              onSave={async (inv) => {
+                // Implementation for edit
+                const invRef = doc(db, "invoices", String(inv.id));
+                const toSave = { ...inv, userId: user.uid };
+                await updateDoc(invRef, toSave);
+                setHistory(history.map(h => h.id === inv.id ? toSave : h));
                 navigate("/invoices");
               }}
               onCancel={() => navigate("/invoices")}
