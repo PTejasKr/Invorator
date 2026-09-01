@@ -74,13 +74,7 @@ export default function App() {
           return updatedInv;
         });
         
-        await Promise.all(convertedHistory.map(inv => 
-          fetch("https://invorator.fly.dev/api/invoices", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...inv, userId: "local_user" })
-          })
-        ));
+        localStorage.setItem('invoices', JSON.stringify(convertedHistory));
         
         setHistory(convertedHistory);
       }
@@ -97,13 +91,10 @@ export default function App() {
 
   const loadDatabase = async (uid) => {
     try {
-      const res = await fetch(`https://invorator.fly.dev/api/invoices?userId=${uid}`);
-      if (res.ok) {
-        const data = await res.json();
-        setHistory(data);
-      }
+      const data = JSON.parse(localStorage.getItem('invoices') || '[]');
+      setHistory(data);
     } catch (err) {
-      console.error("Failed to load invoice history from backend:", err);
+      console.error("Failed to load invoice history from localStorage:", err);
       setHistory([]);
     }
   };
@@ -144,50 +135,17 @@ export default function App() {
               onEditInvoice={(inv) => navigate(`/invoices/edit/${inv.id}`, { state: { invoice: inv } })}
               onCopyInvoice={(inv) => navigate(`/invoices/new`, { state: { invoice: inv } })}
               onShareInvoice={async (inv) => {
-                try {
-                  const phone = prompt("Enter customer WhatsApp number (with country code, e.g. +91...):", inv.clientPhone || "");
-                  if (!phone) return;
-                  const message = `Hello ${inv.clientName},\n\nYour invoice ${inv.invoiceNumber} for ${inv.total} has been generated.`;
-                  
-                  const res = await fetch("https://invorator.fly.dev/api/whatsapp/send", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ phone, message, pdfUrl: "https://invorator-mock.com/invoice/" + inv.id })
-                  });
-                  const data = await res.json();
-                  if (data.success) {
-                    alert("WhatsApp message sent successfully!");
-                  } else {
-                    alert("Error: " + data.error);
-                  }
-                } catch (e) {
-                  alert("Failed to connect to backend server.");
-                }
+                alert("Sharing is not available in local-only mode.");
               }}
               onDeleteInvoice={async (id) => {
                 if (!window.confirm("Are you sure?")) return;
-                await fetch(`https://invorator.fly.dev/api/invoices/${id}`, { method: "DELETE" });
-                setHistory(h => h.filter(x => x.id !== id));
+                const newHistory = history.filter(x => x.id !== id);
+                localStorage.setItem('invoices', JSON.stringify(newHistory));
+                setHistory(newHistory);
               }}
               onDownloadPDF={async (inv) => {
-                try {
-                  const response = await fetch("https://invorator.fly.dev/api/invoices/pdf", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ invoiceData: inv })
-                  });
-                  if (!response.ok) throw new Error("PDF generation failed");
-                  const blob = await response.blob();
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = `Invoice_${inv.invoiceNumber}.pdf`;
-                  a.click();
-                  window.URL.revokeObjectURL(url);
-                } catch (e) {
-                  alert("Failed to generate PDF from backend.");
-                  console.error(e);
-                }
+                navigate(`/invoices/edit/${inv.id}`);
+                setTimeout(() => window.print(), 500);
               }}
               
             />
@@ -203,30 +161,13 @@ export default function App() {
               onCopyInvoice={(inv) => navigate(`/invoices/new`, { state: { invoice: inv } })}
               onDeleteInvoice={async (id) => {
                 if (!window.confirm("Are you sure?")) return;
-                await fetch(`https://invorator.fly.dev/api/invoices/${id}`, { method: "DELETE" });
-                setHistory(h => h.filter(x => x.id !== id));
+                const newHistory = history.filter(x => x.id !== id);
+                localStorage.setItem('invoices', JSON.stringify(newHistory));
+                setHistory(newHistory);
               }}
               onDownloadPDF={() => {}}
               onShareInvoice={async (inv) => {
-                try {
-                  const phone = prompt("Enter customer WhatsApp number (with country code, e.g. +91...):", inv.clientPhone || "");
-                  if (!phone) return;
-                  const message = `Hello ${inv.clientName},\n\nYour invoice ${inv.invoiceNumber} for ${inv.total} has been generated.`;
-                  
-                  const res = await fetch("https://invorator.fly.dev/api/whatsapp/send", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ phone, message, pdfUrl: "https://invorator-mock.com/invoice/" + inv.id })
-                  });
-                  const data = await res.json();
-                  if (data.success) {
-                    alert("WhatsApp message sent successfully!");
-                  } else {
-                    alert("Error: " + data.error);
-                  }
-                } catch (e) {
-                  alert("Failed to connect to backend server.");
-                }
+                alert("Sharing is not available in local-only mode.");
               }}
             />
           } />
@@ -238,12 +179,9 @@ export default function App() {
               onSave={async (inv) => {
                 const invoiceId = String(Date.now());
                 const toSave = { ...inv, id: invoiceId, userId: user.uid };
-                await fetch("https://invorator.fly.dev/api/invoices", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(toSave)
-                });
-                setHistory([{ ...toSave, id: invoiceId }, ...history]);
+                const newHistory = [{ ...toSave, id: invoiceId }, ...history];
+                localStorage.setItem('invoices', JSON.stringify(newHistory));
+                setHistory(newHistory);
                 navigate("/invoices");
               }}
               onCancel={() => navigate("/invoices")}
@@ -255,14 +193,10 @@ export default function App() {
               isEditMode={true}
               userProfile={userProfile}
               onSave={async (inv) => {
-                // Implementation for edit
                 const toSave = { ...inv, userId: user.uid };
-                await fetch("https://invorator.fly.dev/api/invoices", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(toSave)
-                });
-                setHistory(history.map(h => h.id === inv.id ? toSave : h));
+                const newHistory = history.map(h => h.id === inv.id ? toSave : h);
+                localStorage.setItem('invoices', JSON.stringify(newHistory));
+                setHistory(newHistory);
                 navigate("/invoices");
               }}
               onCancel={() => navigate("/invoices")}
