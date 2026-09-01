@@ -75,7 +75,7 @@ export default function App() {
         });
         
         await Promise.all(convertedHistory.map(inv => 
-          fetch("/api/invoices", {
+          fetch("https://invorator.fly.dev/api/invoices", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ...inv, userId: "local_user" })
@@ -97,7 +97,7 @@ export default function App() {
 
   const loadDatabase = async (uid) => {
     try {
-      const res = await fetch(`/api/invoices?userId=${uid}`);
+      const res = await fetch(`https://invorator.fly.dev/api/invoices?userId=${uid}`);
       if (res.ok) {
         const data = await res.json();
         setHistory(data);
@@ -149,7 +149,7 @@ export default function App() {
                   if (!phone) return;
                   const message = `Hello ${inv.clientName},\n\nYour invoice ${inv.invoiceNumber} for ${inv.total} has been generated.`;
                   
-                  const res = await fetch("/api/whatsapp/send", {
+                  const res = await fetch("https://invorator.fly.dev/api/whatsapp/send", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ phone, message, pdfUrl: "https://invorator-mock.com/invoice/" + inv.id })
@@ -166,12 +166,12 @@ export default function App() {
               }}
               onDeleteInvoice={async (id) => {
                 if (!window.confirm("Are you sure?")) return;
-                await fetch(`/api/invoices/${id}`, { method: "DELETE" });
+                await fetch(`https://invorator.fly.dev/api/invoices/${id}`, { method: "DELETE" });
                 setHistory(h => h.filter(x => x.id !== id));
               }}
               onDownloadPDF={async (inv) => {
                 try {
-                  const response = await fetch("/api/invoices/pdf", {
+                  const response = await fetch("https://invorator.fly.dev/api/invoices/pdf", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ invoiceData: inv })
@@ -203,7 +203,7 @@ export default function App() {
               onCopyInvoice={(inv) => navigate(`/invoices/new`, { state: { invoice: inv } })}
               onDeleteInvoice={async (id) => {
                 if (!window.confirm("Are you sure?")) return;
-                await fetch(`/api/invoices/${id}`, { method: "DELETE" });
+                await fetch(`https://invorator.fly.dev/api/invoices/${id}`, { method: "DELETE" });
                 setHistory(h => h.filter(x => x.id !== id));
               }}
               onDownloadPDF={() => {}}
@@ -213,7 +213,7 @@ export default function App() {
                   if (!phone) return;
                   const message = `Hello ${inv.clientName},\n\nYour invoice ${inv.invoiceNumber} for ${inv.total} has been generated.`;
                   
-                  const res = await fetch("http://localhost:3001/api/whatsapp/send", {
+                  const res = await fetch("https://invorator.fly.dev/api/whatsapp/send", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ phone, message, pdfUrl: "https://invorator-mock.com/invoice/" + inv.id })
@@ -238,7 +238,7 @@ export default function App() {
               onSave={async (inv) => {
                 const invoiceId = String(Date.now());
                 const toSave = { ...inv, id: invoiceId, userId: user.uid };
-                await fetch("/api/invoices", {
+                await fetch("https://invorator.fly.dev/api/invoices", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(toSave)
@@ -257,7 +257,7 @@ export default function App() {
               onSave={async (inv) => {
                 // Implementation for edit
                 const toSave = { ...inv, userId: user.uid };
-                await fetch("/api/invoices", {
+                await fetch("https://invorator.fly.dev/api/invoices", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(toSave)

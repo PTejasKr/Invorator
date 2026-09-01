@@ -15,7 +15,7 @@ export function where() {
 
 export async function getDocs(colName) {
   try {
-    const res = await fetch(`/api/${colName}?userId=local_user`);
+    const res = await fetch(`https://invorator.fly.dev/api/${colName}?userId=local_user`);
     const data = await res.json();
     return data.map(item => ({
       id: item.id,
@@ -32,7 +32,7 @@ export function doc(db, colName, id) {
 
 export async function getDoc(docRef) {
   if (docRef.colName === 'users') {
-    const res = await fetch('/api/settings?userId=local_user');
+    const res = await fetch('https://invorator.fly.dev/api/settings?userId=local_user');
     const data = await res.json();
     return {
       exists: () => Object.keys(data).length > 0,
@@ -43,7 +43,7 @@ export async function getDoc(docRef) {
 }
 
 export async function setDoc(docRef, data) {
-  await fetch(`/api/${docRef.colName === 'users' ? 'settings' : docRef.colName}`, {
+  await fetch(`https://invorator.fly.dev/api/${docRef.colName === 'users' ? 'settings' : docRef.colName}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...data, id: docRef.id, userId: 'local_user' })
@@ -52,7 +52,7 @@ export async function setDoc(docRef, data) {
 
 export async function addDoc(colName, data) {
   const id = String(Date.now());
-  await fetch(`/api/${colName}`, {
+  await fetch(`https://invorator.fly.dev/api/${colName}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...data, id, userId: 'local_user' })
@@ -60,7 +60,7 @@ export async function addDoc(colName, data) {
 }
 
 export async function updateDoc(docRef, data) {
-  await fetch(`/api/${docRef.colName === 'users' ? 'settings' : docRef.colName}`, {
+  await fetch(`https://invorator.fly.dev/api/${docRef.colName === 'users' ? 'settings' : docRef.colName}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...data, id: docRef.id, userId: 'local_user' })
@@ -68,7 +68,7 @@ export async function updateDoc(docRef, data) {
 }
 
 export async function deleteDoc(docRef) {
-  await fetch(`/api/${docRef.colName}/${docRef.id}`, { method: 'DELETE' });
+  await fetch(`https://invorator.fly.dev/api/${docRef.colName}/${docRef.id}`, { method: 'DELETE' });
 }
 
 export function writeBatch() {

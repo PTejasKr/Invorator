@@ -37,7 +37,7 @@ export default function Reports() {
   const generateEInvoice = async () => {
     if (invoices.length === 0) return alert("No data to generate E-Invoice.");
     try {
-      const response = await fetch("http://localhost:3001/api/einvoice/generate", {
+      const response = await fetch("https://invorator.fly.dev/api/einvoice/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceData: invoices[0] })
